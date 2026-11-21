@@ -1,0 +1,63 @@
+# El login actual devuelve el JWT en result.token.
+@baseUrl = http://localhost:8080
+@tokenCliente = PEGA_AQUI_EL_JWT_CLIENTE
+@tokenAdmin = PEGA_AQUI_EL_JWT_ADMIN
+@canchaId = 12
+@reservaId = 1
+@fecha = 2027-01-04
+
+### Obtén un ID real compatible con la disciplina.
+GET {{baseUrl}}/api/canchas
+
+### Consulta pública: usa una fecha actual o futura.
+GET {{baseUrl}}/api/canchas/disponibilidad?fecha={{fecha}}&disciplina=VOLEY&duracion=2
+
+### Crear sin utilería: CLIENTE. Devuelve 201 y Location.
+POST {{baseUrl}}/api/reservas
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "canchaId": {{canchaId}},
+  "disciplina": "VOLEY",
+  "fecha": "{{fecha}}",
+  "horaInicio": "10:00",
+  "duracion": 2
+}
+
+### Sustituye reservaId por el ID recibido al crear.
+GET {{baseUrl}}/api/reservas/{{reservaId}}
+Authorization: Bearer {{tokenCliente}}
+
+### Solo reservas del usuario del JWT, incluidas canceladas.
+GET {{baseUrl}}/api/reservas/mis-reservas
+Authorization: Bearer {{tokenCliente}}
+
+### Todas las reservas: ADMIN.
+GET {{baseUrl}}/api/admin/reservas
+Authorization: Bearer {{tokenAdmin}}
+
+### Cancelar antes del inicio: conserva el registro y devuelve 200.
+PATCH {{baseUrl}}/api/reservas/{{reservaId}}/cancelar
+Authorization: Bearer {{tokenCliente}}
+
+### Responsable enviado por el cliente: 400; nunca se toma del JSON.
+POST {{baseUrl}}/api/reservas
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "canchaId": {{canchaId}},
+  "responsableId": 1,
+  "disciplina": "VOLEY",
+  "fecha": "{{fecha}}",
+  "horaInicio": "10:00",
+  "duracion": 1
+}
+
+### Sin autenticación: 401.
+GET {{baseUrl}}/api/reservas/mis-reservas
+
+### Cliente consultando administración: 403.
+GET {{baseUrl}}/api/admin/reservas
+Authorization: Bearer {{tokenCliente}}

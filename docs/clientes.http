@@ -1,0 +1,38 @@
+# El login actual devuelve el JWT en result.token.
+@baseUrl = http://localhost:8080
+@tokenAdmin = PEGA_RESULT_TOKEN_DEL_LOGIN
+@clienteId = 1
+
+### Login local: copiar result.token. Sustituye la clave si configuraste otra.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{"username":"admin","password":"admin123"}
+
+### Crear un registro de ejemplo. Los datos se guardan realmente.
+# Copia result.id a clienteId. No se crea una cuenta ni una reserva.
+POST {{baseUrl}}/api/admin/clientes
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{"cedula":"0100000009","nombres":"Ana","apellidos":"Ejemplo","email":"ana@example.test","telefono":"0991234567"}
+
+### Catálogo, solo ADMIN.
+GET {{baseUrl}}/api/admin/clientes
+Authorization: Bearer {{tokenAdmin}}
+
+### Consulta individual.
+GET {{baseUrl}}/api/admin/clientes/{{clienteId}}
+Authorization: Bearer {{tokenAdmin}}
+
+### Actualizar: preserva creado y actualiza modificado.
+PUT {{baseUrl}}/api/admin/clientes/{{clienteId}}
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{"cedula":"0100000009","nombres":"Ana María","apellidos":"Ejemplo","email":"ana@example.test","telefono":"0991234567"}
+
+### Eliminar únicamente el registro de prueba creado arriba.
+# Eliminación física del catálogo independiente; no afecta cuentas ni reservas.
+DELETE {{baseUrl}}/api/admin/clientes/{{clienteId}}
+Authorization: Bearer {{tokenAdmin}}

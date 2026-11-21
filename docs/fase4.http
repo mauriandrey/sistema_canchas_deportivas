@@ -1,0 +1,75 @@
+# El login actual devuelve el JWT en result.token.
+@baseUrl = http://localhost:8080
+@token = PEGA_AQUI_EL_JWT_DEL_ADMIN
+@canchaId = 1
+@fecha = 2027-01-04
+
+### Catálogo público. Copia un ID real para las solicitudes siguientes.
+GET {{baseUrl}}/api/canchas
+
+### Detalle público.
+GET {{baseUrl}}/api/canchas/{{canchaId}}
+
+### Usa una fecha actual o futura. VOLEY y ECUAVOLEY comparten canchas.
+GET {{baseUrl}}/api/canchas/disponibilidad?fecha={{fecha}}&disciplina=VOLEY&duracion=2
+
+### Duración inválida: 400.
+GET {{baseUrl}}/api/canchas/disponibilidad?fecha={{fecha}}&disciplina=VOLEY&duracion=3
+
+### Horarios: requiere JWT de CLIENTE o ADMIN.
+GET {{baseUrl}}/api/horarios
+Authorization: Bearer {{token}}
+
+### Crear cancha: ADMIN, devuelve 201 y Location. Este ejemplo guarda datos reales.
+POST {{baseUrl}}/api/admin/canchas
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Tenis adicional",
+  "tipo": "TENIS",
+  "superficie": null,
+  "activa": true
+}
+
+### Antes de editar, sustituye canchaId por el ID de la cancha creada arriba.
+PUT {{baseUrl}}/api/admin/canchas/{{canchaId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "nombre": "Tenis adicional - actualizado",
+  "tipo": "TENIS",
+  "superficie": null,
+  "activa": true
+}
+
+### Desactivar: ADMIN. Devuelve 409 si hay reservas confirmadas pendientes.
+PATCH {{baseUrl}}/api/admin/canchas/{{canchaId}}/estado
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"activa": false}
+
+### Reactivar.
+PATCH {{baseUrl}}/api/admin/canchas/{{canchaId}}/estado
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"activa": true}
+
+### Actualizar lunes: ADMIN. Devuelve 409 si deja reservas vigentes fuera de atención.
+PUT {{baseUrl}}/api/admin/horarios/MONDAY
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "apertura": "08:00",
+  "cierre": "16:00"
+}
+
+### Sin JWT: 401. Con un JWT CLIENTE: 403.
+PATCH {{baseUrl}}/api/admin/canchas/{{canchaId}}/estado
+Content-Type: application/json
+
+{"activa": false}

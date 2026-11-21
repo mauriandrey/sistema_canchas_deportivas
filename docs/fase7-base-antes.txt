@@ -1,0 +1,8 @@
+Table	Checksum
+sistema_canchas_deportivas.usuarios	834272998
+sistema_canchas_deportivas.canchas	3172935893
+sistema_canchas_deportivas.horarios_atencion	837306151
+sistema_canchas_deportivas.utileria	4186319769
+sistema_canchas_deportivas.utileria_disciplinas	2698220161
+sistema_canchas_deportivas.reservas	0
+sistema_canchas_deportivas.reserva_utileria	0

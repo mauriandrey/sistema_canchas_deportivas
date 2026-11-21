@@ -1,0 +1,53 @@
+# El login actual devuelve el JWT en result.token.
+@baseUrl = http://localhost:8080
+@token = PEGA_AQUI_EL_TOKEN_RECIBIDO
+
+### Registro público: cuenta CLIENTE y perfil personal obligatorio.
+POST {{baseUrl}}/api/auth/registro
+Content-Type: application/json
+
+{
+  "username": "cliente.demo",
+  "password": "ClaveLocalDemostracion2026!",
+  "cedula": "0100000009",
+  "nombres": "Ana",
+  "apellidos": "Ejemplo",
+  "email": "ana@example.test",
+  "telefono": "0991234567"
+}
+
+### Login: copiar token de la respuesta a la variable superior.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "cliente.demo",
+  "password": "ClaveLocalDemostracion2026!"
+}
+
+### Intentar asignar ADMIN: debe devolver 400.
+POST {{baseUrl}}/api/auth/registro
+Content-Type: application/json
+
+{
+  "username": "cliente.otro",
+  "password": "ClaveLocalDemostracion2026!",
+  "rol": "ADMIN"
+}
+
+### Sin token: 401.
+GET {{baseUrl}}/api/admin/reservas
+
+### Con token CLIENTE: 403. Con ADMIN: 200, consulta implementada en fase 5.
+GET {{baseUrl}}/api/admin/reservas
+Authorization: Bearer {{token}}
+
+### Catálogo público implementado en fase 4: 200.
+GET {{baseUrl}}/api/canchas
+
+### Preflight del frontend React.
+OPTIONS {{baseUrl}}/api/auth/login
+Origin: http://localhost:5173
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: authorization,content-type
+

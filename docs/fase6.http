@@ -1,0 +1,97 @@
+# El login actual devuelve el JWT en result.token.
+@baseUrl = http://localhost:8080
+@tokenAdmin = PEGA_AQUI_EL_JWT_ADMIN
+@tokenCliente = PEGA_AQUI_EL_JWT_CLIENTE
+@canchaId = 1
+@balonId = 1
+@chalecosId = 6
+@reservaId = 1
+@fecha = 2027-01-04
+# Sustituye estos valores únicamente tras contar las unidades físicas reales.
+@existenciasBalonesVerificadas = 0
+@existenciasChalecosVerificadas = 0
+
+### Consulta el catálogo y copia IDs compatibles con FUTBOL_11.
+GET {{baseUrl}}/api/utileria
+Authorization: Bearer {{tokenCliente}}
+
+### Declarar existencias físicas reales: ADMIN.
+PATCH {{baseUrl}}/api/admin/utileria/{{balonId}}/existencias
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{"existencias": {{existenciasBalonesVerificadas}}}
+
+### Declarar existencias reales de chalecos.
+PATCH {{baseUrl}}/api/admin/utileria/{{chalecosId}}/existencias
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{"existencias": {{existenciasChalecosVerificadas}}}
+
+### Disponibilidad por intervalo; no garantiza una asignación hasta confirmar.
+GET {{baseUrl}}/api/utileria/disponibilidad?fecha={{fecha}}&horaInicio=10:00&duracion=2&disciplina=FUTBOL_11
+Authorization: Bearer {{tokenCliente}}
+
+### Crear reserva con implementos: 201 si hay capacidad, 409 si las existencias no alcanzan.
+POST {{baseUrl}}/api/reservas
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "canchaId": {{canchaId}},
+  "disciplina": "FUTBOL_11",
+  "fecha": "{{fecha}}",
+  "horaInicio": "10:00",
+  "duracion": 2,
+  "utileria": [
+    {"utileriaId": {{balonId}}, "cantidad": 1},
+    {"utileriaId": {{chalecosId}}, "cantidad": 2}
+  ]
+}
+
+### Consulta la reserva; sustituye reservaId por el ID recibido.
+GET {{baseUrl}}/api/reservas/{{reservaId}}
+Authorization: Bearer {{tokenCliente}}
+
+### Cancelar conserva los detalles y libera la ocupación temporal.
+PATCH {{baseUrl}}/api/reservas/{{reservaId}}/cancelar
+Authorization: Bearer {{tokenCliente}}
+
+### Reserva sin implementos: no exige existencias. También se acepta omitir utileria o enviarla null.
+POST {{baseUrl}}/api/reservas
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{
+  "canchaId": {{canchaId}},
+  "disciplina": "FUTBOL_11",
+  "fecha": "{{fecha}}",
+  "horaInicio": "10:00",
+  "duracion": 2,
+  "utileria": []
+}
+
+### Crear un nuevo implemento de ejemplo: ADMIN. Registra cantidades cero hasta verificarlas.
+POST {{baseUrl}}/api/admin/utileria
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{
+  "nombre": "Chalecos adicionales",
+  "tipo": "CHALECO",
+  "existencias": 0,
+  "activa": true,
+  "disciplinasCompatibles": ["FUTBOL_11", "FUTBOL_6"]
+}
+
+### El catálogo se edita con PUT /api/admin/utileria/{id} usando los mismos campos.
+### Sin token: 401.
+GET {{baseUrl}}/api/utileria
+
+### Un cliente no puede modificar existencias: 403.
+PATCH {{baseUrl}}/api/admin/utileria/{{balonId}}/existencias
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{"existencias": 0}

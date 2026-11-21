@@ -1,0 +1,89 @@
+# Ejecutar una petición a la vez con IDs propios de prueba. DELETE elimina físicamente.
+@baseUrl = http://localhost:8080
+@tokenAdmin = PEGA_RESULT_TOKEN_DEL_LOGIN_ADMIN
+@usuarioId = 2
+@clienteId = 1
+@reservaId = 1
+@canchaId = 5
+@utileriaId = 4
+@fecha = 2027-01-04
+
+### Registrar cuenta CLIENTE y perfil. Cambiar username, cédula y correo si ya existen.
+POST {{baseUrl}}/api/auth/registro
+Content-Type: application/json
+
+{"username":"cliente.demo","password":"ClaveDeEjemplo2027","cedula":"0100000009","nombres":"Ana","apellidos":"Ejemplo","email":"ana@example.test","telefono":"0991234567"}
+
+### Consultar cuentas. Nunca devuelve hashes ni claves.
+GET {{baseUrl}}/api/admin/usuarios
+Authorization: Bearer {{tokenAdmin}}
+
+### Editar cuenta CLIENTE; omitir password conserva la clave.
+PUT {{baseUrl}}/api/admin/usuarios/{{usuarioId}}
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{"username":"cliente.demo","activo":true,"clienteId":{{clienteId}}}
+
+### Consultar perfil personal.
+GET {{baseUrl}}/api/admin/clientes/{{clienteId}}
+Authorization: Bearer {{tokenAdmin}}
+
+### Crear horario únicamente si ese día aún no tiene configuración.
+POST {{baseUrl}}/api/admin/horarios
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{"dia":"MONDAY","apertura":"08:00","cierre":"16:00"}
+
+### Crear una reserva por cuenta de un CLIENTE activo.
+POST {{baseUrl}}/api/admin/reservas
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{"responsableId":{{usuarioId}},"canchaId":{{canchaId}},"disciplina":"VOLEY","fecha":"{{fecha}}","horaInicio":"10:00","duracion":1,"utileria":[]}
+
+### Reprogramar reserva; [] significa sin implementos.
+PUT {{baseUrl}}/api/admin/reservas/{{reservaId}}
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{"responsableId":{{usuarioId}},"canchaId":{{canchaId}},"disciplina":"VOLEY","fecha":"{{fecha}}","horaInicio":"11:00","duracion":1,"estado":"CONFIRMADA","utileria":[]}
+
+### Agregar implemento disponible y compatible.
+POST {{baseUrl}}/api/admin/reservas/{{reservaId}}/utileria
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{"utileriaId":{{utileriaId}},"cantidad":1}
+
+### Consultar detalle por implemento.
+GET {{baseUrl}}/api/admin/reservas/{{reservaId}}/utileria/{{utileriaId}}
+Authorization: Bearer {{tokenAdmin}}
+
+### Editar cantidad de un detalle existente.
+PUT {{baseUrl}}/api/admin/reservas/{{reservaId}}/utileria/{{utileriaId}}
+Authorization: Bearer {{tokenAdmin}}
+Content-Type: application/json
+
+{"cantidad":2}
+
+### Eliminar el detalle sin eliminar la reserva.
+DELETE {{baseUrl}}/api/admin/reservas/{{reservaId}}/utileria/{{utileriaId}}
+Authorization: Bearer {{tokenAdmin}}
+
+### Cancelar conserva el historial y los detalles.
+PATCH {{baseUrl}}/api/admin/reservas/{{reservaId}}/cancelar
+Authorization: Bearer {{tokenAdmin}}
+
+### Eliminar físicamente la reserva y sus detalles.
+DELETE {{baseUrl}}/api/admin/reservas/{{reservaId}}
+Authorization: Bearer {{tokenAdmin}}
+
+### Eliminar una cuenta CLIENTE únicamente cuando ya no tiene reservas.
+DELETE {{baseUrl}}/api/admin/usuarios/{{usuarioId}}
+Authorization: Bearer {{tokenAdmin}}
+
+### Eliminar el perfil que quedó sin cuenta.
+DELETE {{baseUrl}}/api/admin/clientes/{{clienteId}}
+Authorization: Bearer {{tokenAdmin}}

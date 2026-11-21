@@ -1,0 +1,106 @@
+# El login actual devuelve el JWT en result.token.
+@baseUrl = http://localhost:8080
+@username = cliente.demo
+@password = ClaveDeEjemplo2027
+@tokenCliente = PEGA_EL_TOKEN_DEL_CLIENTE
+@tokenAdmin = PEGA_EL_TOKEN_DEL_ADMIN
+@canchaId = 16
+@reservaId = 1
+@fecha = 2027-01-04
+
+# Ejecuta cada solicitud por separado. Sustituye fecha e IDs por valores reales.
+# El registro y la reserva escriben datos; cancelar conserva el historial.
+
+### 1. Catálogo público: copia el ID de una cancha de TENIS activa.
+GET {{baseUrl}}/api/canchas
+Accept: application/json
+
+### 2. Horarios disponibles: elige un bloque libre.
+GET {{baseUrl}}/api/canchas/disponibilidad?fecha={{fecha}}&disciplina=TENIS&duracion=1
+
+### 3. Registro CLIENTE. Cambia username si ya fue registrado.
+POST {{baseUrl}}/api/auth/registro
+Content-Type: application/json
+
+{"username":"{{username}}","password":"{{password}}","cedula":"0100000009","nombres":"Ana","apellidos":"Ejemplo","email":"ana@example.test","telefono":"0991234567"}
+
+### 4. Login: copia token de la respuesta a tokenCliente.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{"username":"{{username}}","password":"{{password}}"}
+
+### 5. Horarios del complejo.
+GET {{baseUrl}}/api/horarios
+Authorization: Bearer {{tokenCliente}}
+
+### 6. Reserva sin implementos. El responsable se obtiene del token.
+# Espera 201; copia id a reservaId. Location indica la ruta de consulta.
+POST {{baseUrl}}/api/reservas
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{"canchaId":{{canchaId}},"disciplina":"TENIS","fecha":"{{fecha}}","horaInicio":"10:00","duracion":1,"utileria":[]}
+
+### 7. Reservas propias.
+GET {{baseUrl}}/api/reservas/mis-reservas
+Authorization: Bearer {{tokenCliente}}
+
+### 8. Consultar la reserva creada.
+GET {{baseUrl}}/api/reservas/{{reservaId}}
+Authorization: Bearer {{tokenCliente}}
+
+### 9. Conflicto intencional: repetir el mismo bloque antes de cancelar devuelve 409.
+POST {{baseUrl}}/api/reservas
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{"canchaId":{{canchaId}},"disciplina":"TENIS","fecha":"{{fecha}}","horaInicio":"10:00","duracion":1}
+
+### 10. Cancelar antes del inicio: 200; libera horario y conserva registro.
+PATCH {{baseUrl}}/api/reservas/{{reservaId}}/cancelar
+Authorization: Bearer {{tokenCliente}}
+
+### 11. Utilería y disponibilidad. Para asignarla, configura existencias reales como ADMIN.
+GET {{baseUrl}}/api/utileria
+Authorization: Bearer {{tokenCliente}}
+
+###
+GET {{baseUrl}}/api/utileria/disponibilidad?fecha={{fecha}}&horaInicio=10:00&duracion=1&disciplina=TENIS
+Authorization: Bearer {{tokenCliente}}
+
+### 12. Login ADMIN local. Sustituye la clave si configuraste otra.
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{"username":"admin","password":"admin123"}
+
+### 13. Copia el token anterior a tokenAdmin.
+GET {{baseUrl}}/api/admin/reservas
+Authorization: Bearer {{tokenAdmin}}
+
+### 14. Sin token: 401.
+GET {{baseUrl}}/api/reservas/mis-reservas
+
+### 15. Cliente en administración: 403.
+GET {{baseUrl}}/api/admin/reservas
+Authorization: Bearer {{tokenCliente}}
+
+### 16. Campos obligatorios ausentes: 400 con detalles en español.
+POST {{baseUrl}}/api/reservas
+Authorization: Bearer {{tokenCliente}}
+Content-Type: application/json
+
+{}
+
+### 17. No se permite seleccionar ADMIN en el registro: 400.
+POST {{baseUrl}}/api/auth/registro
+Content-Type: application/json
+
+{"username":"otro.demo","password":"ClaveDeEjemplo2027","rol":"ADMIN"}
+
+### 18. Preflight de React: origen autorizado.
+OPTIONS {{baseUrl}}/api/reservas
+Origin: http://localhost:5173
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: authorization,content-type
